@@ -214,6 +214,21 @@ def mikro_eddsa_verify(data: bytes, signature: bytes, public_key: bytes):
     return public_key.eddsa_verify(data, signature)
 
 
+def modinv(a, m):
+    def extended_gcd(a, b):
+        if a == 0:
+            return b, 0, 1
+        gcd, x1, y1 = extended_gcd(b % a, a)
+        x = y1 - (b // a) * x1
+        y = x1
+        return gcd, x, y
+
+    gcd, x, _ = extended_gcd(a, m)
+    if gcd != 1:
+        raise ValueError("Modular inverse does not exist")
+    return x % m
+
+
 def mikro_kcdsa_sign(data: bytes, private_key: bytes) -> bytes:
     assert (isinstance(data, bytes))
     assert (isinstance(private_key, bytes))
@@ -233,9 +248,8 @@ def mikro_kcdsa_sign(data: bytes, private_key: bytes) -> bytes:
         data_hash[31] &= 0x7F
         data_hash[31] |= 0x40
         data_hash = Tools.bytestoint_le(data_hash)
-        signature = pow(private_key.scalar, -1, curve.n) * \
-            (nonce_secret - data_hash)
-        signature %= curve.n
+        signature = (modinv(private_key.scalar, curve.n) * \
+            (nonce_secret - data_hash)) % curve.n
         if int((public_key.point * signature + curve.G * data_hash).x) == nonce:
             return bytes(nonce_hash[:16]+Tools.inttobytes_le(signature, 32))
 
