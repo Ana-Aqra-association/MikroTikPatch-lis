@@ -2,7 +2,16 @@ name: Patch v6
 
 on:
   workflow_dispatch:
-
+    inputs:
+      arch:
+        description: 'Architecture (x86, arm64, mipsbe)'
+        required: true
+        default: 'x86'
+        type: choice
+        options:
+          - x86
+          - arm64
+          - mipsbe
 permissions:
   contents: write
 
